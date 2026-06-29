@@ -1,11 +1,11 @@
 from flask import Flask, request, jsonify
-from models.user import User
+from models.classes import User, Meal
 from database import db
 from flask_login import LoginManager, login_user, current_user, logout_user, login_required
 import bcrypt 
 
 app = Flask(__name__)
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite://database.db"
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///database.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 login_manager = LoginManager()
@@ -103,10 +103,28 @@ def delete_user(id_user):
 ===============================================================GERENCIAMENTO SOBRE DIETA==============================================================================
 """
 
-@app.route("/user/cadastra_dieta")
-@login_required
-def 
+def verificacao_user(id_user):
+    if id_user != current_user.id:
+        return jsonify({"message": "Tentando acessar outro usuario! Não vai conseguir(Credenciais Inválidas)"}), 400
 
+@app.route("/user/<int:id_user>/refeicao", methods=["POST"])
+@login_required
+def create_meal(id_user):
+    user = User.query.get(id_user)
+    data = request.json
+    name = data.get("name")
+    description = data.get("description")
+    meal_time = data.get("meal_time")
+    in_diet = data.get("in_diet")
+
+    verificacao_user(user.id)
+
+    if name and meal_time and in_diet:
+        meal = Meal(name=name, description=description, meal_time=meal_time, in_diet=in_diet)
+        db.session.add(meal)
+        db.session.commit()
+        return jsonify({"message": "Refeição cadastrada com sucesso!"})
+    
 
 if __name__ == "__main__":
     with app.app_context():
