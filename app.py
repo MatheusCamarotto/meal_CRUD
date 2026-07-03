@@ -1,15 +1,18 @@
 from flask import Flask, request, jsonify
-from models.user import User
+from models.classes import User, Meal
 from database import db
 from flask_login import LoginManager, login_user, current_user, logout_user, login_required
 import bcrypt 
+from datetime import datetime
 
 app = Flask(__name__)
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite://database.db"
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///database.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
+app.secret_key = '1234'
 login_manager = LoginManager()
 db.init_app(app)
+login_manager.init_app(app)
 login_manager.login_view = 'login'
 
 """
@@ -24,10 +27,10 @@ def load_user(user_id):
 def login():
     data = request.json
     email = data.get('email')
-    username = data.get('username')
+    #username = data.get('username')
     password = data.get('password')
 
-    if username and password:
+    if email and password:
         user = User.query.filter_by(email=email).first()
         if user and bcrypt.checkpw(str.encode(password), user.password):
             login_user(user)
@@ -46,15 +49,20 @@ def logout():
 def create_user():
     data = request.json
     email = data.get("email")
+    username = data.get("username")
     password = data.get("password")
 
-    if email and password:
+    if email and username and password:
+        user = User.query.filter_by(email=email).first()
+        if user:
+            return jsonify({"message": "Email já cadastrado"})
+        
         hashed_password = bcrypt.hashpw(str.encode(password), bcrypt.gensalt())
-        user = User(email=email, password=hashed_password, role='user')
+        user = User(email=email, username=username, password=hashed_password, role='user')
         db.session.add(user)
         db.session.commit()
         return jsonify({"message": "Usuario cadastrado com sucesso"})
-    return jsonify({"message": "Credenciais inválidas"}), 400
+    return jsonify({"message": "Input errado"}), 400
 
 @app.route("/user/<int:id_user>", methods=["GET"])
 @login_required
@@ -103,11 +111,35 @@ def delete_user(id_user):
 ===============================================================GERENCIAMENTO SOBRE DIETA==============================================================================
 """
 
-@app.route("/user/cadastra_dieta")
+def verificacao_user(id_user):
+    if id_user != current_user.id:
+        return jsonify({"message": "Tentando acessar outro usuario! Não vai conseguir(Credenciais Inválidas)"}), 400
+
+@app.route("/user/<int:id_user>/refeicao", methods=["POST"])
 @login_required
-def 
+def create_meal(id_user):
+    user = User.query.get(id_user)
+    data = request.json
+    name = data.get("name")
+    description = data.get("description")
+    meal_time = data.get("meal_time")
+    in_diet = data.get("in_diet")
 
+    verificacao_user(user.id)
 
+    if name and meal_time and in_diet is not None:
+        meal_time_convertido = datetime.strptime(meal_time, "%d/%m/%Y %H:%M:%S")
+        meal = Meal(name=name, description=description, meal_time=meal_time_convertido, in_diet=in_diet)
+        db.session.add(meal)
+        db.session.commit()
+        return jsonify({"message": "Refeição cadastrada com sucesso!"})
+    
+@app.route("/user/<int:id_user>/lista_refeicoes", methods=["GET"])
+@login_required
+def read_refeicoes(id_user):
+    user = User.query.get(id_user)
+    verificacao_user(user.id)
+    
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()
