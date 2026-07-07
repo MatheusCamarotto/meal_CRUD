@@ -23,6 +23,7 @@ login_manager.login_view = 'login'
 def load_user(user_id):
     return User.query.get(user_id)
 
+#Login de usuario
 @app.route("/login", methods=["POST"])
 def login():
     data = request.json
@@ -39,12 +40,14 @@ def login():
         
     return jsonify({"message": "Credenciais inválidas"}), 400
 
+#Logout de usuario
 @app.route('/logout', methods=["GET"])
 @login_required
 def logout():
     logout_user()
     return jsonify({"message": "Logout realizado com sucesso"})
 
+#Cadastro de usuario novo
 @app.route("/user", methods=["POST"])
 def create_user():
     data = request.json
@@ -64,6 +67,7 @@ def create_user():
         return jsonify({"message": "Usuario cadastrado com sucesso"})
     return jsonify({"message": "Input errado"}), 400
 
+#Busca por um usuario
 @app.route("/user/<int:id_user>", methods=["GET"])
 @login_required
 def read_user(id_user):
@@ -73,6 +77,7 @@ def read_user(id_user):
         return {"username": user.username}
     return jsonify({"message": "Usuario não encontrado"}), 404
 
+#Atualização de usuario
 @app.route("/user/<int:id_user>", methods=["PUT"])
 @login_required
 def update_user(id_user):
@@ -88,6 +93,7 @@ def update_user(id_user):
         return jsonify({"message": f"Usuário {id_user} atualizado com sucesso"})
     return jsonify({"message": "Usuário não encontrado"}), 404
 
+#Deleção de usuario
 @app.route("/user/<int:id_user>", methods=["DELETE"])
 @login_required
 def delete_user(id_user):
@@ -111,10 +117,11 @@ def delete_user(id_user):
 ===============================================================GERENCIAMENTO SOBRE DIETA==============================================================================
 """
 
-def verificacao_user(id_user):
-    if id_user != current_user.id:
-        return jsonify({"message": "Tentando acessar outro usuario! Não vai conseguir(Credenciais Inválidas)"}), 400
+# def verificacao_user(id_user):
+#     if id_user != current_user.id:
+#         return jsonify({"message": "Tentando acessar outro usuario! Não vai conseguir(Credenciais Inválidas)"}), 400
 
+#Cadastro de refeicao por usuario
 @app.route("/user/<int:id_user>/refeicao", methods=["POST"])
 @login_required
 def create_meal(id_user):
@@ -126,19 +133,26 @@ def create_meal(id_user):
 
     if id_user != current_user.id:
         return jsonify({"message": "olha tentando fazer pro outro user KKKKKKKKKKKKKKKKKKKKKKK"}), 400
-    
+
     if name and meal_time and in_diet is not None:
         meal_time_convertido = datetime.strptime(meal_time, "%d/%m/%Y %H:%M:%S")
         meal = Meal(name=name, description=description, meal_time=meal_time_convertido, in_diet=in_diet)
         db.session.add(meal)
         db.session.commit()
         return jsonify({"message": "Refeição cadastrada com sucesso!"})
-    
+
+#Listagem de todas as refeicoes por usuario
 @app.route("/user/<int:id_user>/lista_refeicoes", methods=["GET"])
 @login_required
 def read_refeicoes(id_user):
+    if id_user != current_user.id:
+        return jsonify({"message": "olha tentando fazer pro outro user KKKKKKKKKKKKKKKKKKKKKKK"}), 400
+
     user = User.query.get(id_user)
-    verificacao_user(user.id)
+    meal = Meal.query.get(id_user)
+    if user: 
+        return {f"meal's {user.username}": }
+        #retorno de todas as refeições por consulta sql
     
 if __name__ == "__main__":
     with app.app_context():
