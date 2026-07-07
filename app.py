@@ -118,15 +118,15 @@ def verificacao_user(id_user):
 @app.route("/user/<int:id_user>/refeicao", methods=["POST"])
 @login_required
 def create_meal(id_user):
-    user = User.query.get(id_user)
     data = request.json
     name = data.get("name")
     description = data.get("description")
     meal_time = data.get("meal_time")
     in_diet = data.get("in_diet")
 
-    verificacao_user(user.id)
-
+    if id_user != current_user.id:
+        return jsonify({"message": "olha tentando fazer pro outro user KKKKKKKKKKKKKKKKKKKKKKK"}), 400
+    
     if name and meal_time and in_diet is not None:
         meal_time_convertido = datetime.strptime(meal_time, "%d/%m/%Y %H:%M:%S")
         meal = Meal(name=name, description=description, meal_time=meal_time_convertido, in_diet=in_diet)
