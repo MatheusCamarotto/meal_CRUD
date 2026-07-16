@@ -144,7 +144,7 @@ def create_meal(id_user):
     in_diet = data.get("in_diet")
 
     if id_user != current_user.id:
-        return jsonify({"message": "olha tentando fazer pro outro user KKKKKKKKKKKKKKKKKKKKKKK"}), 400
+        return jsonify({"message": "olha tentando fazer pro outro user KKKKKKKKKKKKKKKKKKKKKKK"}), 401
 
     if name and meal_time and in_diet is not None:
         meal_time_convertido = datetime.strptime(meal_time, "%d/%m/%Y %H:%M:%S")
@@ -158,14 +158,13 @@ def create_meal(id_user):
 @login_required
 def read_refeicoes(id_user):
     if id_user != current_user.id:
-        return jsonify({"message": "olha tentando fazer pro outro user KKKKKKKKKKKKKKKKKKKKKKK"}), 400
+        return jsonify({"message": "olha tentando fazer pro outro user KKKKKKKKKKKKKKKKKKKKKKK"}), 401
 
     user = User.query.get(id_user)
     """filter_by(id_user=id_user).all()
     gera o SQL equivalente a SELECT * FROM meal WHERE id_user = :id_user.
     .all()
     """
-
     meals = Meal.query.filter_by(id_user=id_user).all()
     if user:
         resultado = [
@@ -182,7 +181,10 @@ def read_refeicoes(id_user):
             return jsonify({f"meal's {user.username}": resultado})
         else:
             return jsonify({f"meal's {user.username}": "Nenhuma refeição cadastrada"})
-        
+    
+#Rota de alteração de refeicao
+@app.route("/user/<int:id_user>/<>")
+
 
 if __name__ == "__main__":
     with app.app_context():
