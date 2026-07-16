@@ -38,7 +38,7 @@ def login():
             print(current_user.is_authenticated)
             return jsonify({"message": "Autenticação realizada com sucesso"})
         
-    return jsonify({"message": "Credenciais inválidas"}), 400
+    return jsonify({"message": "Credenciais inválidas"}), 401
 
 #Logout de usuario
 @app.route('/logout', methods=["GET"])
@@ -58,7 +58,7 @@ def create_user():
     if email and username and password:
         user = User.query.filter_by(email=email).first()
         if user:
-            return jsonify({"message": "Email já cadastrado"})
+            return jsonify({"message": "Email já cadastrado"}), 409
         
         hashed_password = bcrypt.hashpw(str.encode(password), bcrypt.gensalt())
         user = User(email=email, username=username, password=hashed_password, role='user')
@@ -78,19 +78,31 @@ def read_user(id_user):
     return jsonify({"message": "Usuario não encontrado"}), 404
 
 #Atualização de usuario
-@app.route("/user/<int:id_user>", methods=["PUT"])
+@app.route("/user/<int:id_user>", methods=["PATCH"])
 @login_required
 def update_user(id_user):
     data = request.json
     user = User.query.get(id_user)
-
-    if id_user != current_user.id and current_user.role == 'user':
-        return jsonify({"message": "Operação não permitida"}), 403
     
-    if user and data.get("password"):
-        user.password = data.get("password")
+    email = data.get("email")
+    password = data.get("password")
+    username = data.get("username")
+
+    if user:
+        if id_user != current_user.id and current_user.role == 'user':
+            return jsonify({"message": "Operação não permitida"}), 403
+
+        if not (email or username or password):
+            return jsonify({"message": "Nenhum campo alterado"}), 400
+        if email:
+            user.email = email
+        if password:
+            user.password = bcrypt.hashpw(str.encode(password), bcrypt.gensalt())
+        if username:
+            user.username = username
         db.session.commit()
         return jsonify({"message": f"Usuário {id_user} atualizado com sucesso"})
+        
     return jsonify({"message": "Usuário não encontrado"}), 404
 
 #Deleção de usuario
@@ -161,7 +173,7 @@ def read_refeicoes(id_user):
             "id": meal.id,
             "name": meal.name,
             "description": meal.description,
-            "meal_time": meal.meal_time,
+            "meal_time": meal.meal_time.strftime("%d/%m/%Y %H:%M:%S"),
             "in_diet": meal.in_diet
             }
             for meal in meals
