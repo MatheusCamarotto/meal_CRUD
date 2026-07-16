@@ -136,7 +136,7 @@ def create_meal(id_user):
 
     if name and meal_time and in_diet is not None:
         meal_time_convertido = datetime.strptime(meal_time, "%d/%m/%Y %H:%M:%S")
-        meal = Meal(name=name, description=description, meal_time=meal_time_convertido, in_diet=in_diet)
+        meal = Meal(name=name, description=description, meal_time=meal_time_convertido, in_diet=in_diet, id_user=id_user)
         db.session.add(meal)
         db.session.commit()
         return jsonify({"message": "Refeição cadastrada com sucesso!"})
@@ -149,11 +149,29 @@ def read_refeicoes(id_user):
         return jsonify({"message": "olha tentando fazer pro outro user KKKKKKKKKKKKKKKKKKKKKKK"}), 400
 
     user = User.query.get(id_user)
-    meal = Meal.query.get(id_user)
-    if user: 
-        return {f"meal's {user.username}": }
-        #retorno de todas as refeições por consulta sql
-    
+    """filter_by(id_user=id_user).all()
+    gera o SQL equivalente a SELECT * FROM meal WHERE id_user = :id_user.
+    .all()
+    """
+
+    meals = Meal.query.filter_by(id_user=id_user).all()
+    if user:
+        resultado = [
+            {
+            "id": meal.id,
+            "name": meal.name,
+            "description": meal.description,
+            "meal_time": meal.meal_time,
+            "in_diet": meal.in_diet
+            }
+            for meal in meals
+        ]
+        if resultado:
+            return jsonify({f"meal's {user.username}": resultado})
+        else:
+            return jsonify({f"meal's {user.username}": "Nenhuma refeição cadastrada"})
+        
+
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()
