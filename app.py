@@ -147,11 +147,16 @@ def create_meal(id_user):
         return jsonify({"message": "olha tentando fazer pro outro user KKKKKKKKKKKKKKKKKKKKKKK"}), 401
 
     if name and meal_time and in_diet is not None:
-        meal_time_convertido = datetime.strptime(meal_time, "%d/%m/%Y %H:%M:%S")
+        try:
+            meal_time_convertido = datetime.strptime(meal_time, "%d/%m/%Y %H:%M:%S")
+        except ValueError:
+            return jsonify({"message": "Formato de meal_time inválido, use dd/mm/YYYY HH:MM:SS"}), 400
         meal = Meal(name=name, description=description, meal_time=meal_time_convertido, in_diet=in_diet, id_user=id_user)
         db.session.add(meal)
         db.session.commit()
         return jsonify({"message": "Refeição cadastrada com sucesso!"})
+
+    return jsonify({"message": "Input errado"}), 400
 
 #Listagem de todas as refeicoes por usuario
 @app.route("/user/<int:id_user>/lista_refeicoes", methods=["GET"])
@@ -182,6 +187,26 @@ def read_refeicoes(id_user):
         else:
             return jsonify({f"meal's {user.username}": "Nenhuma refeição cadastrada"})
     
+#Busca por uma refeicao individual
+@app.route("/user/<int:id_user>/<int:id_meal>", methods=["GET"])
+@login_required
+def read_meal(id_user, id_meal):
+    if id_user != current_user.id:
+        return jsonify({"message": "olha tentando fazer pro outro user KKKKKKKKKKKKKKKKKKKKKKK"}), 401
+
+    meal = Meal.query.filter_by(id=id_meal, id_user=id_user).first()
+
+    if meal:
+        return jsonify({
+            "id": meal.id,
+            "name": meal.name,
+            "description": meal.description,
+            "meal_time": meal.meal_time.strftime("%d/%m/%Y %H:%M:%S"),
+            "in_diet": meal.in_diet
+        })
+
+    return jsonify({"message": "Refeição não encontrada"}), 404
+
 #Rota de alteração de refeicao
 @app.route("/user/<int:id_user>/<int:id_meal>", methods=["PATCH"])
 @login_required
@@ -208,7 +233,10 @@ def update_meal(id_user, id_meal):
         if description:
             meal.description = description
         if meal_time:
-            meal_time_convertido = datetime.strptime(meal_time, "%d/%m/%Y %H:%M:%S")
+            try:
+                meal_time_convertido = datetime.strptime(meal_time, "%d/%m/%Y %H:%M:%S")
+            except ValueError:
+                return jsonify({"message": "Formato de meal_time inválido, use dd/mm/YYYY HH:MM:SS"}), 400
             meal.meal_time = meal_time_convertido
         if in_diet:
             meal.in_diet = in_diet
