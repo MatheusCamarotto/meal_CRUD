@@ -117,7 +117,7 @@ def delete_user(id_user):
         return jsonify({"message": "Deleção não permitida"})
     
     if user:
-        db.session.delte(user)
+        db.session.delete(user)
         db.session.commit()
 
         return jsonify({"message": f"Usuario {id_user} deletado com sucesso"})
@@ -201,7 +201,7 @@ def update_meal(id_user, id_meal):
         if id_user != current_user.id and current_user.role == "user":
             return jsonify({"message": "Operação não permitida"}), 403
         
-        if not (name or description, meal_time, in_diet):
+        if not (name or description or meal_time or in_diet):
             return jsonify({"message": "Nenhum campo alterado"}), 400
         if name:
             meal.name = name
