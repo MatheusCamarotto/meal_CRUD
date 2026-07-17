@@ -183,8 +183,58 @@ def read_refeicoes(id_user):
             return jsonify({f"meal's {user.username}": "Nenhuma refeição cadastrada"})
     
 #Rota de alteração de refeicao
-@app.route("/user/<int:id_user>/<>")
+@app.route("/user/<int:id_user>/<int:id_meal>", methods=["PATCH"])
+@login_required
+def update_meal(id_user, id_meal):
+    if id_user != current_user.id: 
+        return jsonify({"message": "olha tentando fazer pro outro user KKKKKKKKKKKKKKKKKKKKKKK"}), 401
+    user = User.query.get(id_user)
+    meal = Meal.query.get(id_meal)
 
+    data = request.json
+    name = data.get("name")
+    description = data.get("description")
+    meal_time = data.get("meal_time")
+    in_diet = data.get("in_diet")
+
+    if user and meal:
+        if id_user != current_user.id and current_user.role == "user":
+            return jsonify({"message": "Operação não permitida"}), 403
+        
+        if not (name or description, meal_time, in_diet):
+            return jsonify({"message": "Nenhum campo alterado"}), 400
+        if name:
+            meal.name = name
+        if description:
+            meal.description = description
+        if meal_time:
+            meal_time_convertido = datetime.strptime(meal_time, "%d/%m/%Y %H:%M:%S")
+            meal.meal_time = meal_time_convertido
+        if in_diet:
+            meal.in_diet = in_diet
+        db.session.commit()
+        return jsonify({"message": f"Refeição {meal.name} atualizada com sucesso!"})
+    
+    return jsonify({"message": "Refeição não encontrada"}), 404
+
+@app.route("/user/<int:id_user>/<int:id_meal>", methods=["DELETE"])
+@login_required
+def delete_meal(id_user, id_meal):
+    user = User.query.get(id_user)
+    meal = Meal.query.get(id_meal)
+    if id_user != current_user.id: 
+        return jsonify({"message": "olha tentando fazer pro outro user KKKKKKKKKKKKKKKKKKKKKKK"}), 401
+
+    if user and meal:
+        if id_user != current_user.id and current_user.role == "user":
+            return jsonify({"message": "Operação não permitida"}), 403
+    
+    if user:
+        db.session.delete(meal)
+        db.session.commit()
+        return jsonify({"message": f"Refeição {meal.name} deletada com sucesso!"})
+    
+    return jsonify({"message": "Refeição não encontrada"}), 404
 
 if __name__ == "__main__":
     with app.app_context():
